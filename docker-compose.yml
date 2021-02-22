@@ -1,0 +1,26 @@
+version: '3'
+services:
+  server:
+    container_name: server
+    build:
+      context: ./
+      target: base
+    volumes: 
+      - .:/app/go/base
+    ports:
+      - "8080:8080"
+    command: "air -d"
+  db:
+    container_name: db
+    image: mysql
+    environment:
+      MYSQL_DATABASE: app
+      MYSQL_ROOT_PASSWORD: password
+      TZ: Asia/Tokyo
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+volumes: 
+  mysql_data:
+    name: golang_clean_arch_mysql_data
