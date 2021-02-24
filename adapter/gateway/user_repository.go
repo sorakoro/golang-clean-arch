@@ -2,10 +2,9 @@ package gateway
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"github.com/sorakoro/golang-clean-arch/domain/entity"
 	"github.com/sorakoro/golang-clean-arch/domain/usecase"
 )
@@ -25,13 +24,11 @@ func (r *UserRepositoryImpl) Store(ctx context.Context, request *usecase.AddUser
 	query := "INSERT INTO users (name, email, password) VALUES (:name, :email, :password)"
 	res, err := r.db.NamedExecContext(ctx, query, &request)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	lastInsertID, _ := res.LastInsertId()
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return &entity.User{ID: lastInsertID, Name: request.Name, Email: request.Email, Password: request.Password}, nil
 }
@@ -42,8 +39,7 @@ func (r *UserRepositoryImpl) Fetch(ctx context.Context, email string) (*int64, e
 	query := "SELECT id from users WHERE email = ?"
 	err := r.db.GetContext(ctx, &user, query, email)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	var userID *int64
 	userID = &user.ID

@@ -2,10 +2,10 @@ package usecase
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sorakoro/golang-clean-arch/domain"
 	"github.com/sorakoro/golang-clean-arch/domain/entity"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -55,15 +55,13 @@ func NewUserUseCase(repository UserRepository, timeout time.Duration) UserUseCas
 // Store ユーザーを作成する
 func (u *UserUseCaseImpl) Store(ctx context.Context, request *AddUserRequest) (*AddUserResponse, error) {
 	if ok, err := isRequestValid(request); !ok {
-		fmt.Fprint(os.Stderr, err)
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	ctx, cancel := context.WithTimeout(ctx, u.contextTime)
 	defer cancel()
 	user, err := u.repository.Store(ctx, request)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return &AddUserResponse{ID: user.ID, Name: user.Name, Email: user.Email}, nil
 }
@@ -71,14 +69,13 @@ func (u *UserUseCaseImpl) Store(ctx context.Context, request *AddUserRequest) (*
 // Fetch ユーザーを取得する
 func (u *UserUseCaseImpl) Fetch(ctx context.Context, email string) (*FetchUserResponse, error) {
 	user := entity.User{Email: email}
-	if user.IsEmailEmpty() {
-		fmt.Fprintln(os.Stderr, "email is empty")
-		return nil, nil
+	err := user.CheckEmailEmpty()
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 	userID, err := u.repository.Fetch(ctx, email)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return &FetchUserResponse{ID: userID}, nil
 }
@@ -88,8 +85,8 @@ func isRequestValid(u *AddUserRequest) (bool, error) {
 	validator := validator.New()
 	err := validator.Struct(u)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return false, err
+		appErr := domain.AppError{ErrType: domain.ErrValidation, Err: err}
+		return false, &appErr
 	}
 	return true, nil
 }

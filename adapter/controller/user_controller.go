@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/labstack/echo/v4"
+	"github.com/sorakoro/golang-clean-arch/domain"
 	"github.com/sorakoro/golang-clean-arch/domain/usecase"
 )
 
@@ -26,14 +27,20 @@ func (uc *UserController) Store(c echo.Context) error {
 	var req usecase.AddUserRequest
 	err := c.Bind(&req)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "%+v", err)
 		return c.NoContent(http.StatusUnprocessableEntity)
 	}
 	ctx := c.Request().Context()
 	res, err := uc.usecase.Store(ctx, &req)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
-		return c.NoContent(http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "%+v", err)
+		err, ok := err.(*domain.AppError)
+		if !ok || err.ErrType == domain.ErrDatabase {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		if err.ErrType == domain.ErrValidation {
+			return c.NoContent(http.StatusBadRequest)
+		}
 	}
 	return c.JSON(http.StatusCreated, res)
 }
@@ -44,7 +51,7 @@ func (uc *UserController) Fetch(c echo.Context) error {
 	email := c.QueryParams().Get("email")
 	res, err := uc.usecase.Fetch(ctx, email)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "%+v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusOK, res)
