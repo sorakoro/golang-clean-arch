@@ -5,7 +5,7 @@ import "time"
 // User User schema
 //+migu table:"users"
 type User struct {
-	ID        int       `migu:"pk,autoincrement"`
+	ID        int64     `migu:"pk,autoincrement"`
 	Name      string    `migu:"type:varchar(255)"`
 	Email     string    `migu:"type:varchar(255),unique"`
 	Password  string    `migu:"type:varchar(255)"`
